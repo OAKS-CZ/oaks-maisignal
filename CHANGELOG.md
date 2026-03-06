@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-03-06
+
+### Added
+- Snowflake `maisignal_wh` warehouse (XSMALL, auto-suspend 60s, auto-resume).
+- L0 tables: `uzis_erecept`, `client_portfolio`, `client_brands`, `notification_log`.
+- Seed data for all L0 tables with real-world LYRICA/PREGLENIX market data.
+- SnowSQL runner script (`snowflake/run.sh`) for executing SQL files with `.env` credentials.
+- Pre-commit hooks for SQLFluff lint, trailing whitespace, and secret detection.
+
+### Changed
+- Renamed Snowflake schema from `raw` to `l0`.
+- Renamed `L0_raw/` directory to `L0/`.
+- Renumbered init scripts to accommodate new warehouse script (03 → 04).
+- Updated service user to use `maisignal_wh` warehouse with warehouse grant.
+
 ## [0.2.0] - 2026-03-06
 
 ### Added
