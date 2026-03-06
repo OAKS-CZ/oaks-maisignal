@@ -1,8 +1,15 @@
 # Environment variables / secrets
-config/.env
+backend/config/.env
 .env
 
 # Python
+backend/venv/
 venv/
 __pycache__/
 *.pyc
+
+# Terraform
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

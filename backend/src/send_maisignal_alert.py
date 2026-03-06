@@ -15,9 +15,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-ENV_PATH = SCRIPT_DIR / "config" / ".env"
-HTML_FILE = SCRIPT_DIR / "sukl-alert-email-real-data.html"
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BACKEND_DIR / "config" / ".env"
+HTML_FILE = BACKEND_DIR / "templates" / "sukl-alert-email-real-data.html"
 ECOMAIL_URL = "https://api2.ecomailapp.cz/transactional/send-message"
 
 

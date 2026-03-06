@@ -6,19 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MAiSIGNAL is a pharmaceutical market intelligence alert system by OAKS Consulting s.r.o. It monitors Czech drug regulatory events (SUKL drug unavailability reports) and sends branded transactional email alerts to pharma clients via the Ecomail API. Alerts highlight market opportunities when competitor drugs experience supply disruptions.
 
-## Architecture
+## Repository Structure
 
-- **`send_maisignal_alert.py`** — Python script that sends a transactional email via Ecomail's REST API (`POST /transactional/send-message`). Loads the API key from `config/.env` using `python-dotenv`, reads the HTML template, and posts it with tracking options enabled.
-- **`sukl-alert-email-real-data.html`** — Self-contained HTML email template (inline CSS, no external dependencies except Google Fonts). Uses DM Sans / DM Mono typography. Contains SUKL regulatory data, KPI metrics, prescriber/pharmacy tables, and market opportunity analysis.
+This is a monorepo with three top-level components:
+
+- **`snowflake/`** — Snowflake SQL init scripts and data layer definitions (L0–L4 architecture). Linted with SQLFluff (dialect: `snowflake`).
+- **`backend/`** — Python application that sends transactional email alerts via Ecomail's REST API (`POST /transactional/send-message`). Loads the API key from `backend/config/.env` using `python-dotenv`, reads the HTML template from `backend/templates/`, and posts it with tracking options enabled.
+- **`terraform/`** — AWS infrastructure provisioning (ECR, IAM) using Terraform with S3 remote state backend.
 
 ## Key Commands
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Backend — install dependencies
+cd backend && pip install -r requirements.txt
 
-# Send an alert email (requires valid Ecomail API key)
-python send_maisignal_alert.py
+# Backend — send an alert email (requires valid Ecomail API key)
+cd backend && python src/send_maisignal_alert.py
+
+# Snowflake — lint SQL files
+cd snowflake && sqlfluff lint .
+
+# Terraform — initialize and validate
+cd terraform && terraform init && terraform validate
 ```
 
 ## Domain Context
@@ -30,6 +39,7 @@ python send_maisignal_alert.py
 
 ## Important Notes
 
-- The Ecomail API key is loaded from `config/.env` via `python-dotenv` — never hardcode it in source files
+- The Ecomail API key is loaded from `backend/config/.env` via `python-dotenv` — never hardcode it in source files
 - Email HTML is designed for email clients — avoid modern CSS features (flexbox/grid used but may need fallback tables for Outlook)
 - The `from_email` domain is `maisignal.cz`
+- Terraform state is stored in S3 bucket `oaks-terraform-state`
