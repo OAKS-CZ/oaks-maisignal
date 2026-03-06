@@ -1,4 +1,4 @@
--- Create the raw schema for L0 source data.
+-- Create the L0 schema for raw source data.
 USE DATABASE maisignal;
 
-CREATE SCHEMA IF NOT EXISTS raw;
+CREATE SCHEMA IF NOT EXISTS l0;

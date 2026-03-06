@@ -1,0 +1,75 @@
+-- Seed data: UZIS eRECEPT reimbursement data for PREGABALIN (N02BF02), Q3 2025.
+-- 60 rows total: P+ (20), P! (10), L+ (20), L! (10).
+
+INSERT INTO maisignal.l0.uzis_erecept (
+    icz_nazev_preskribujici, icz_nazev_vykazujici,
+    lp_naz, celkova_uhrada_kc, atc5, kvartal, rok
+)
+VALUES
+-- P+ Preskribující – oba přípravky (10 facilities x LYRICA + PREGLENIX = 20 rows)
+('FN Plzeň', NULL, 'LYRICA', 435142.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Plzeň', NULL, 'PREGLENIX', 74658.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('NH Hospital Hořovice', NULL, 'LYRICA', 421433.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('NH Hospital Hořovice', NULL, 'PREGLENIX', 15061.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN v Motole', NULL, 'LYRICA', 401875.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN v Motole', NULL, 'PREGLENIX', 28817.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Brno', NULL, 'LYRICA', 320698.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Brno', NULL, 'PREGLENIX', 17679.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('VFN Praha', NULL, 'LYRICA', 292409.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('VFN Praha', NULL, 'PREGLENIX', 126399.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('KZ Teplice', NULL, 'LYRICA', 284584.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('KZ Teplice', NULL, 'PREGLENIX', 104130.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Ostrava', NULL, 'LYRICA', 267244.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Ostrava', NULL, 'PREGLENIX', 7857.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN u sv. Anny Brno', NULL, 'LYRICA', 249008.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN u sv. Anny Brno', NULL, 'PREGLENIX', 145385.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nem. Pardubický kraj', NULL, 'LYRICA', 214032.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nem. Pardubický kraj', NULL, 'PREGLENIX', 380458.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('ÚVN Praha', NULL, 'LYRICA', 180309.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('ÚVN Praha', NULL, 'PREGLENIX', 87751.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+
+-- P! Preskribující – pouze LYRICA (10 facilities x LYRICA only = 10 rows)
+('Nem. Znojmo', NULL, 'LYRICA', 253924.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('KN Liberec', NULL, 'LYRICA', 179632.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nemocnice Blansko', NULL, 'LYRICA', 173800.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('FN Olomouc', NULL, 'LYRICA', 143738.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nem. Strakonice', NULL, 'LYRICA', 133942.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Masarykův onk. ústav', NULL, 'LYRICA', 105760.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nem. Uherské Hradiště', NULL, 'LYRICA', 88293.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('ON Mladá Boleslav', NULL, 'LYRICA', 82829.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('IKEM Praha', NULL, 'LYRICA', 79516.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+('Nem. Nové Město na M.', NULL, 'LYRICA', 75101.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+
+-- L+ Lékárny – oba přípravky (10 facilities x LYRICA + PREGLENIX = 20 rows)
+(NULL, 'ČLH (Dr. Max síť)', 'LYRICA', 3130139.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'ČLH (Dr. Max síť)', 'PREGLENIX', 1351004.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU ČR s.r.o.', 'LYRICA', 909302.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU ČR s.r.o.', 'PREGLENIX', 871662.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU ČR a.s.', 'LYRICA', 507390.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU ČR a.s.', 'PREGLENIX', 65492.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN Plzeň', 'LYRICA', 433619.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN Plzeň', 'PREGLENIX', 47805.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Senimed s.r.o.', 'LYRICA', 383329.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Senimed s.r.o.', 'PREGLENIX', 7860.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN v Motole', 'LYRICA', 280105.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN v Motole', 'PREGLENIX', 5240.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU Lékárna', 'LYRICA', 272005.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'BENU Lékárna', 'PREGLENIX', 42565.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Health and Beauty', 'LYRICA', 261084.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Health and Beauty', 'PREGLENIX', 416064.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN Brno', 'LYRICA', 260886.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN Brno', 'PREGLENIX', 9822.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'ČLH – Dr. Max lékárna', 'LYRICA', 246180.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'ČLH – Dr. Max lékárna', 'PREGLENIX', 187279.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+
+-- L! Lékárny – pouze LYRICA (10 facilities x LYRICA only = 10 rows)
+(NULL, 'Nem. Znojmo', 'LYRICA', 169636.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Nem. České Budějovice', 'LYRICA', 153111.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'FN Olomouc', 'LYRICA', 137799.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Nem. Blansko', 'LYRICA', 130385.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Aesculap Znojmo', 'LYRICA', 112670.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Nem. Český Krumlov', 'LYRICA', 93060.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Nem. Vyškov', 'LYRICA', 81169.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Nem. Písek', 'LYRICA', 80024.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Masarykův onk. ústav', 'LYRICA', 71723.00, 'N02BF02 - PREGABALIN', 'Q3', 2025),
+(NULL, 'Slezská nem. Opava', 'LYRICA', 65809.00, 'N02BF02 - PREGABALIN', 'Q3', 2025);
