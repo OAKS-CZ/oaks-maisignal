@@ -1,0 +1,97 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPO: maisignal
+  ECS_TASK_FAMILY: maisignal-dev-task
+
+jobs:
+  deploy:
+    name: Build, Scan & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG" backend/
+
+      - name: Run Trivy image scan
+        uses: aquasecurity/trivy-action@0.34.2
+        with:
+          scan-type: "image"
+          image-ref: "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO }}:${{ github.sha }}"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Generate Trivy SARIF report
+        uses: aquasecurity/trivy-action@0.34.2
+        if: always()
+        with:
+          scan-type: "image"
+          image-ref: "${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPO }}:${{ github.sha }}"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+          format: "sarif"
+          output: "trivy-image-results.sarif"
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: "trivy-image-results.sarif"
+          category: "trivy-image"
+
+      - name: Push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG"
+
+      - name: Register new ECS task definition
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition "$ECS_TASK_FAMILY" \
+            --query 'taskDefinition')
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | \
+            jq --arg IMAGE "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG" \
+            '.containerDefinitions[0].image = $IMAGE |
+             del(.taskDefinitionArn, .revision, .status,
+                 .requiresAttributes, .compatibilities,
+                 .registeredAt, .registeredBy)')
+
+          aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF"
+
+          echo "### Deployed to dev" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image:** \`$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Task family:** \`$ECS_TASK_FAMILY\`" >> "$GITHUB_STEP_SUMMARY"

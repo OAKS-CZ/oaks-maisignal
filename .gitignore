@@ -14,3 +14,5 @@ terraform/.terraform/
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
+terraform/lambda/package/
+terraform/lambda/*.zip
