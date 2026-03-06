@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import requests
+import snowflake.connector
 from dotenv import load_dotenv
 
 logging.basicConfig(
@@ -40,6 +41,65 @@ def load_config(env_path: Path = ENV_PATH) -> str:
     return api_key
 
 
+SNOWFLAKE_ENV_VARS = [
+    "SNOWFLAKE_ACCOUNT",
+    "SNOWFLAKE_USER",
+    "SNOWFLAKE_PASSWORD",
+    "SNOWFLAKE_ROLE",
+    "SNOWFLAKE_WAREHOUSE",
+]
+
+
+def load_snowflake_config(env_path: Path = ENV_PATH) -> dict:
+    """Load Snowflake connection parameters from environment variables.
+
+    Raises:
+        ValueError: If any required Snowflake env var is missing.
+    """
+    if env_path.is_file():
+        load_dotenv(env_path)
+
+    missing = [v for v in SNOWFLAKE_ENV_VARS if not os.getenv(v)]
+    if missing:
+        raise ValueError(
+            f"Missing Snowflake env vars: {', '.join(missing)}"
+        )
+
+    return {
+        "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+        "user": os.getenv("SNOWFLAKE_USER"),
+        "password": os.getenv("SNOWFLAKE_PASSWORD"),
+        "role": os.getenv("SNOWFLAKE_ROLE"),
+        "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+    }
+
+
+def fetch_recipients(sf_config: dict) -> list[dict]:
+    """Fetch email recipients from the Snowflake client_portfolio table.
+
+    Returns:
+        List of dicts with ``email`` and ``name`` keys.
+
+    Raises:
+        RuntimeError: If no recipients are found.
+    """
+    conn = snowflake.connector.connect(**sf_config)
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT user_email, company_name "
+            "FROM maisignal.l0.client_portfolio"
+        )
+        rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        raise RuntimeError("No recipients found in client_portfolio.")
+
+    return [{"email": row[0], "name": row[1]} for row in rows]
+
+
 def load_template(template_path: Path = HTML_FILE) -> str:
     """Read and return the HTML email template.
 
@@ -53,7 +113,7 @@ def load_template(template_path: Path = HTML_FILE) -> str:
     return html
 
 
-def build_payload(html_content: str) -> dict:
+def build_payload(html_content: str, recipient: dict) -> dict:
     """Build the Ecomail transactional email payload."""
     return {
         "message": {
@@ -66,8 +126,8 @@ def build_payload(html_content: str) -> dict:
             "reply_to": "noreply@mailing.oaks.cz",
             "to": [
                 {
-                    "email": "marko.sidlovsky@oaks.cz",
-                    "name": "Marko Sidlovsky",
+                    "email": recipient["email"],
+                    "name": recipient["name"],
                 }
             ],
             "html": html_content,
@@ -121,23 +181,52 @@ def main() -> None:
         logger.error(str(exc))
         sys.exit(1)
 
-    payload = build_payload(html_content)
-    logger.info("Sending alert via Ecomail API...")
+    try:
+        sf_config = load_snowflake_config()
+    except ValueError as exc:
+        logger.error(str(exc))
+        sys.exit(1)
 
     try:
-        response = send_alert(payload, api_key)
-    except requests.RequestException as exc:
-        logger.error("Network error: %s", exc)
+        recipients = fetch_recipients(sf_config)
+    except RuntimeError as exc:
+        logger.error(str(exc))
         sys.exit(1)
 
-    logger.info("Response status: %d", response.status_code)
-    logger.info("Response body: %s", response.text)
+    logger.info("Sending alerts to %d recipients...", len(recipients))
+    failures = 0
 
-    if not response.ok:
-        logger.error("Ecomail API returned an error.")
+    for recipient in recipients:
+        payload = build_payload(html_content, recipient)
+        try:
+            response = send_alert(payload, api_key)
+        except requests.RequestException as exc:
+            logger.error(
+                "Network error sending to %s: %s", recipient["email"], exc
+            )
+            failures += 1
+            continue
+
+        logger.info(
+            "Response for %s: %d", recipient["email"], response.status_code
+        )
+
+        if not response.ok:
+            logger.error(
+                "Ecomail API error for %s: %s",
+                recipient["email"],
+                response.text,
+            )
+            failures += 1
+            continue
+
+        logger.info("Alert sent to %s.", recipient["email"])
+
+    if failures:
+        logger.error("%d of %d sends failed.", failures, len(recipients))
         sys.exit(1)
 
-    logger.info("Alert sent successfully.")
+    logger.info("All %d alerts sent successfully.", len(recipients))
 
 
 if __name__ == "__main__":

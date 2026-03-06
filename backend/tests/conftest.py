@@ -16,8 +16,14 @@ def sample_api_key():
 
 
 @pytest.fixture()
-def sample_payload(sample_html):
+def sample_recipient():
+    """Sample recipient dict for testing."""
+    return {"email": "test@example.com", "name": "Test User"}
+
+
+@pytest.fixture()
+def sample_payload(sample_html, sample_recipient):
     """Pre-built payload for testing."""
     from send_maisignal_alert import build_payload
 
-    return build_payload(sample_html)
+    return build_payload(sample_html, sample_recipient)

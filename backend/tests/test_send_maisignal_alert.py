@@ -7,7 +7,9 @@ import requests
 
 from send_maisignal_alert import (
     build_payload,
+    fetch_recipients,
     load_config,
+    load_snowflake_config,
     load_template,
     main,
     send_alert,
@@ -66,8 +68,8 @@ class TestLoadTemplate:
 
 
 class TestBuildPayload:
-    def test_structure(self, sample_html):
-        payload = build_payload(sample_html)
+    def test_structure(self, sample_html, sample_recipient):
+        payload = build_payload(sample_html, sample_recipient)
 
         assert "message" in payload
         msg = payload["message"]
@@ -79,25 +81,25 @@ class TestBuildPayload:
         assert "text" in msg
         assert "options" in msg
 
-    def test_html_content_included(self, sample_html):
-        payload = build_payload(sample_html)
+    def test_html_content_included(self, sample_html, sample_recipient):
+        payload = build_payload(sample_html, sample_recipient)
 
         assert payload["message"]["html"] == sample_html
 
-    def test_tracking_options_enabled(self, sample_html):
-        payload = build_payload(sample_html)
+    def test_tracking_options_enabled(self, sample_html, sample_recipient):
+        payload = build_payload(sample_html, sample_recipient)
         options = payload["message"]["options"]
 
         assert options["click_tracking"] is True
         assert options["open_tracking"] is True
 
-    def test_recipient(self, sample_html):
-        payload = build_payload(sample_html)
+    def test_recipient(self, sample_html, sample_recipient):
+        payload = build_payload(sample_html, sample_recipient)
         recipients = payload["message"]["to"]
 
         assert len(recipients) == 1
-        assert "email" in recipients[0]
-        assert "name" in recipients[0]
+        assert recipients[0]["email"] == sample_recipient["email"]
+        assert recipients[0]["name"] == sample_recipient["name"]
 
 
 # ── send_alert ───────────────────────────────────────────────────────
@@ -159,13 +161,100 @@ class TestSendAlert:
 # ── main ─────────────────────────────────────────────────────────────
 
 
+# ── load_snowflake_config ────────────────────────────────────────────
+
+
+class TestLoadSnowflakeConfig:
+    def test_success(self, tmp_path, monkeypatch):
+        env_file = tmp_path / ".env"
+        env_file.write_text(
+            "SNOWFLAKE_ACCOUNT=acct\n"
+            "SNOWFLAKE_USER=usr\n"
+            "SNOWFLAKE_PASSWORD=pwd\n"
+            "SNOWFLAKE_ROLE=role\n"
+            "SNOWFLAKE_WAREHOUSE=wh\n"
+        )
+        monkeypatch.delenv("SNOWFLAKE_ACCOUNT", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_USER", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_PASSWORD", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_ROLE", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_WAREHOUSE", raising=False)
+
+        result = load_snowflake_config(env_file)
+
+        assert result["account"] == "acct"
+        assert result["user"] == "usr"
+        assert result["password"] == "pwd"  # pragma: allowlist secret
+        assert result["role"] == "role"
+        assert result["warehouse"] == "wh"
+
+    def test_missing_vars_raises(self, tmp_path, monkeypatch):
+        env_file = tmp_path / ".env"
+        env_file.write_text("")
+        monkeypatch.delenv("SNOWFLAKE_ACCOUNT", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_USER", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_PASSWORD", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_ROLE", raising=False)
+        monkeypatch.delenv("SNOWFLAKE_WAREHOUSE", raising=False)
+
+        with pytest.raises(ValueError, match="Missing Snowflake env vars"):
+            load_snowflake_config(env_file)
+
+
+# ── fetch_recipients ─────────────────────────────────────────────────
+
+
+class TestFetchRecipients:
+    @patch("send_maisignal_alert.snowflake.connector.connect")
+    def test_success(self, mock_connect):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [
+            ("a@example.com", "Company A"),
+            ("b@example.com", "Company B"),
+        ]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_connect.return_value = mock_conn
+
+        result = fetch_recipients({"account": "acct"})
+
+        assert len(result) == 2
+        assert result[0] == {"email": "a@example.com", "name": "Company A"}
+        assert result[1] == {"email": "b@example.com", "name": "Company B"}
+        mock_conn.close.assert_called_once()
+
+    @patch("send_maisignal_alert.snowflake.connector.connect")
+    def test_empty_result_raises(self, mock_connect):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_connect.return_value = mock_conn
+
+        with pytest.raises(RuntimeError, match="No recipients found"):
+            fetch_recipients({"account": "acct"})
+
+        mock_conn.close.assert_called_once()
+
+
+# ── main ─────────────────────────────────────────────────────────────
+
+
 class TestMain:
     @patch("send_maisignal_alert.send_alert")
+    @patch("send_maisignal_alert.fetch_recipients")
+    @patch("send_maisignal_alert.load_snowflake_config")
     @patch("send_maisignal_alert.load_template")
     @patch("send_maisignal_alert.load_config")
-    def test_success(self, mock_config, mock_template, mock_send):
+    def test_success(
+        self, mock_config, mock_template, mock_sf, mock_fetch, mock_send
+    ):
         mock_config.return_value = "test-key"
         mock_template.return_value = "<html>ok</html>"
+        mock_sf.return_value = {"account": "acct"}
+        mock_fetch.return_value = [
+            {"email": "a@example.com", "name": "Company A"},
+        ]
         mock_response = MagicMock(spec=requests.Response)
         mock_response.ok = True
         mock_response.status_code = 200
@@ -176,6 +265,8 @@ class TestMain:
 
         mock_config.assert_called_once()
         mock_template.assert_called_once()
+        mock_sf.assert_called_once()
+        mock_fetch.assert_called_once()
         mock_send.assert_called_once()
 
     @patch("send_maisignal_alert.load_config")
@@ -196,12 +287,50 @@ class TestMain:
             main()
         assert exc_info.value.code == 1
 
-    @patch("send_maisignal_alert.send_alert")
+    @patch("send_maisignal_alert.load_snowflake_config")
     @patch("send_maisignal_alert.load_template")
     @patch("send_maisignal_alert.load_config")
-    def test_api_error_exits(self, mock_config, mock_template, mock_send):
+    def test_snowflake_config_error_exits(
+        self, mock_config, mock_template, mock_sf
+    ):
         mock_config.return_value = "test-key"
         mock_template.return_value = "<html>ok</html>"
+        mock_sf.side_effect = ValueError("Missing Snowflake env vars")
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
+
+    @patch("send_maisignal_alert.fetch_recipients")
+    @patch("send_maisignal_alert.load_snowflake_config")
+    @patch("send_maisignal_alert.load_template")
+    @patch("send_maisignal_alert.load_config")
+    def test_no_recipients_exits(
+        self, mock_config, mock_template, mock_sf, mock_fetch
+    ):
+        mock_config.return_value = "test-key"
+        mock_template.return_value = "<html>ok</html>"
+        mock_sf.return_value = {"account": "acct"}
+        mock_fetch.side_effect = RuntimeError("No recipients found")
+
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
+
+    @patch("send_maisignal_alert.send_alert")
+    @patch("send_maisignal_alert.fetch_recipients")
+    @patch("send_maisignal_alert.load_snowflake_config")
+    @patch("send_maisignal_alert.load_template")
+    @patch("send_maisignal_alert.load_config")
+    def test_api_error_exits(
+        self, mock_config, mock_template, mock_sf, mock_fetch, mock_send
+    ):
+        mock_config.return_value = "test-key"
+        mock_template.return_value = "<html>ok</html>"
+        mock_sf.return_value = {"account": "acct"}
+        mock_fetch.return_value = [
+            {"email": "a@example.com", "name": "Company A"},
+        ]
         mock_response = MagicMock(spec=requests.Response)
         mock_response.ok = False
         mock_response.status_code = 500
@@ -213,13 +342,46 @@ class TestMain:
         assert exc_info.value.code == 1
 
     @patch("send_maisignal_alert.send_alert")
+    @patch("send_maisignal_alert.fetch_recipients")
+    @patch("send_maisignal_alert.load_snowflake_config")
     @patch("send_maisignal_alert.load_template")
     @patch("send_maisignal_alert.load_config")
-    def test_network_error_exits(self, mock_config, mock_template, mock_send):
+    def test_network_error_exits(
+        self, mock_config, mock_template, mock_sf, mock_fetch, mock_send
+    ):
         mock_config.return_value = "test-key"
         mock_template.return_value = "<html>ok</html>"
+        mock_sf.return_value = {"account": "acct"}
+        mock_fetch.return_value = [
+            {"email": "a@example.com", "name": "Company A"},
+        ]
         mock_send.side_effect = requests.ConnectionError("timeout")
 
         with pytest.raises(SystemExit) as exc_info:
             main()
         assert exc_info.value.code == 1
+
+    @patch("send_maisignal_alert.send_alert")
+    @patch("send_maisignal_alert.fetch_recipients")
+    @patch("send_maisignal_alert.load_snowflake_config")
+    @patch("send_maisignal_alert.load_template")
+    @patch("send_maisignal_alert.load_config")
+    def test_multiple_recipients(
+        self, mock_config, mock_template, mock_sf, mock_fetch, mock_send
+    ):
+        mock_config.return_value = "test-key"
+        mock_template.return_value = "<html>ok</html>"
+        mock_sf.return_value = {"account": "acct"}
+        mock_fetch.return_value = [
+            {"email": "a@example.com", "name": "Company A"},
+            {"email": "b@example.com", "name": "Company B"},
+        ]
+        mock_response = MagicMock(spec=requests.Response)
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.text = '{"status": "ok"}'
+        mock_send.return_value = mock_response
+
+        main()
+
+        assert mock_send.call_count == 2
