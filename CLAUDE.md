@@ -8,14 +8,17 @@ MAiSIGNAL is a pharmaceutical market intelligence alert system by OAKS Consultin
 
 ## Architecture
 
-- **`send_maisignal_alert.sh`** — Bash script that sends a transactional email via Ecomail's REST API (`POST /api/transactional/send-message`). It JSON-escapes an HTML file and posts it with tracking options enabled.
+- **`send_maisignal_alert.py`** — Python script that sends a transactional email via Ecomail's REST API (`POST /transactional/send-message`). Loads the API key from `config/.env` using `python-dotenv`, reads the HTML template, and posts it with tracking options enabled.
 - **`sukl-alert-email-real-data.html`** — Self-contained HTML email template (inline CSS, no external dependencies except Google Fonts). Uses DM Sans / DM Mono typography. Contains SUKL regulatory data, KPI metrics, prescriber/pharmacy tables, and market opportunity analysis.
 
 ## Key Commands
 
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
 # Send an alert email (requires valid Ecomail API key)
-./send_maisignal_alert.sh
+python send_maisignal_alert.py
 ```
 
 ## Domain Context
@@ -27,6 +30,6 @@ MAiSIGNAL is a pharmaceutical market intelligence alert system by OAKS Consultin
 
 ## Important Notes
 
-- The Ecomail API key in `send_maisignal_alert.sh` is hardcoded — must be extracted to an environment variable or `.env` file before any git commits
+- The Ecomail API key is loaded from `config/.env` via `python-dotenv` — never hardcode it in source files
 - Email HTML is designed for email clients — avoid modern CSS features (flexbox/grid used but may need fallback tables for Outlook)
 - The `from_email` domain is `maisignal.cz`

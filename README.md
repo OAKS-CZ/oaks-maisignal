@@ -15,8 +15,9 @@ MAiSIGNAL monitors Czech drug regulatory events — specifically SUKL drug unava
 
 ```
 oaks-maisignal/
-├── send_maisignal_alert.sh        # Sends transactional email via Ecomail REST API
+├── send_maisignal_alert.py         # Sends transactional email via Ecomail REST API
 ├── sukl-alert-email-real-data.html # Self-contained HTML email template (inline CSS)
+├── requirements.txt                # Python dependencies
 ├── config/
 │   └── .env                       # Ecomail API key (not committed)
 ├── .gitignore
@@ -26,9 +27,8 @@ oaks-maisignal/
 
 ## Prerequisites
 
-- **Bash** (macOS/Linux)
-- **Python 3** — used for JSON-escaping HTML content
-- **curl** — for Ecomail API calls
+- **Python 3**
+- **pip**
 - **Ecomail account** with a valid API key
 
 ## Setup
@@ -40,28 +40,28 @@ oaks-maisignal/
    cd oaks-maisignal
    ```
 
-2. Create the environment file with your Ecomail API key:
+2. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Create the environment file with your Ecomail API key:
 
    ```bash
    mkdir -p config
-   echo 'ECOMAIL_API_KEY="your-api-key-here"' > config/.env
-   ```
-
-3. Make the script executable:
-
-   ```bash
-   chmod +x send_maisignal_alert.sh
+   echo 'ECOMAIL_API_KEY=your-api-key-here' > config/.env
    ```
 
 ## Usage
 
 ```bash
-./send_maisignal_alert.sh
+python send_maisignal_alert.py
 ```
 
 The script will:
 - Load the API key from `config/.env`
-- JSON-escape the HTML email template
+- Read the HTML email template
 - Send the email via `POST https://api2.ecomailapp.cz/transactional/send-message`
 - Enable click and open tracking
 
