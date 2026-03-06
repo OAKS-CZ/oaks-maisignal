@@ -17,11 +17,10 @@ This is a monorepo with three top-level components:
 ## Key Commands
 
 ```bash
-# Backend — install dependencies
-cd backend && pip install -r requirements.txt
-
-# Backend — install dev dependencies (pytest, ruff)
-cd backend && pip install -r requirements-dev.txt
+# Backend — setup virtualenv and install deps
+cd backend && python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt          # production
+pip install -r requirements-dev.txt      # dev (pytest, ruff)
 
 # Backend — send an alert email (requires valid Ecomail API key)
 cd backend && python src/send_maisignal_alert.py
@@ -32,8 +31,9 @@ cd backend && pytest --cov=src --cov-report=term-missing
 # Backend — lint
 cd backend && ruff check src/
 
-# Backend — build Docker image
+# Backend — build & run Docker image
 cd backend && docker build -t maisignal-backend .
+docker run -e ECOMAIL_API_KEY=... maisignal-backend
 
 # Snowflake — lint SQL files
 cd snowflake && sqlfluff lint .
@@ -45,19 +45,40 @@ cd snowflake && ./run.sh seed/
 
 # Terraform — initialize and validate
 cd terraform && terraform init && terraform validate
+
+# Pre-commit — install hooks (once per clone)
+pre-commit install
+
+# Pre-commit — run all hooks manually
+pre-commit run --all-files
 ```
+
+## Pre-commit Hooks
+
+Configured in `.pre-commit-config.yaml`. Installed via `pre-commit install`.
+
+| Hook | Scope | Purpose |
+|------|-------|---------|
+| `trailing-whitespace` | All files | Remove trailing whitespace |
+| `end-of-file-fixer` | All files | Ensure files end with newline |
+| `check-added-large-files` | All files | Prevent large file commits |
+| `ruff` | `backend/` | Python linting (config: `backend/pyproject.toml`) |
+| `sqlfluff-lint` | `snowflake/` | SQL linting (dialect: snowflake) |
+| `detect-secrets` | All files | Prevent secrets from being committed |
 
 ## Domain Context
 
-- **SUKL** (Státní ústav pro kontrolu léčiv) — Czech State Institute for Drug Control
+- **SUKL** (Statni ustav pro kontrolu leciv) — Czech State Institute for Drug Control
 - **UZIS eRECEPT** — Czech national e-prescription data source for reimbursement/prescription analytics
 - **ATC codes** — Anatomical Therapeutic Chemical classification (e.g., N02BF02 = Pregabalin)
 - Alert language is Czech; all UI strings, email content, and field labels are in Czech
 
 ## Important Notes
 
-- The Ecomail API key is loaded from `backend/config/.env` via `python-dotenv` — never hardcode it in source files. For Docker, inject via `docker run -e ECOMAIL_API_KEY=...` (`.env` is excluded from the image)
-- Snowflake credentials are loaded from `snowflake/config/.env` by `run.sh` — never hardcode them in source files
+- Never hardcode secrets — all credentials are loaded from `.env` files or environment variables
+- The Ecomail API key: `backend/config/.env` locally, `docker run -e ECOMAIL_API_KEY=...` in Docker
+- Snowflake credentials: `snowflake/config/.env` (loaded by `run.sh`)
 - Email HTML is designed for email clients — avoid modern CSS features (flexbox/grid used but may need fallback tables for Outlook)
 - The `from_email` domain is `maisignal.cz`
 - Terraform state is stored in S3 bucket `oaks-terraform-state`
+- Backend uses Python virtualenv at `backend/venv/` (gitignored)
