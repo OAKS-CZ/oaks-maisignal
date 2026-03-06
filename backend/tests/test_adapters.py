@@ -45,6 +45,36 @@ class TestSnowflakeRecipientRepository:
         with pytest.raises(RuntimeError, match="No recipients found"):
             repo.get_all()
 
+    def test_default_schema_uses_l0(self):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [("a@example.com", "A")]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+
+        repo = SnowflakeRecipientRepository(mock_conn)
+        repo.get_all()
+
+        query = mock_cursor.execute.call_args[0][0]
+        assert "maisignal.l0.client_portfolio" in query
+
+    def test_custom_schema(self):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [("a@example.com", "A")]
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+
+        repo = SnowflakeRecipientRepository(mock_conn, schema="l0_dev")
+        repo.get_all()
+
+        query = mock_cursor.execute.call_args[0][0]
+        assert "maisignal.l0_dev.client_portfolio" in query
+
+    def test_invalid_schema_raises(self):
+        mock_conn = MagicMock()
+
+        with pytest.raises(ValueError, match="Invalid schema"):
+            SnowflakeRecipientRepository(mock_conn, schema="evil_schema")
+
 
 # ── FileTemplateLoader ───────────────────────────────────────────────
 

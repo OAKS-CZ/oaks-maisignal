@@ -96,7 +96,7 @@ class TestMain:
 
         mock_config.assert_called_once()
         mock_connect.assert_called_once_with(account="acct")
-        mock_repo_cls.assert_called_once_with(mock_conn)
+        mock_repo_cls.assert_called_once_with(mock_conn, schema="l0")
         mock_loader_cls.assert_called_once()
         mock_sender_cls.assert_called_once()
         mock_notif_cls.assert_called_once_with(mock_conn)

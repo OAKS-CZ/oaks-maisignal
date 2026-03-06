@@ -75,9 +75,11 @@ def main() -> None:
         logger.error(str(exc))
         sys.exit(1)
 
+    schema = os.getenv("SNOWFLAKE_SCHEMA", "l0")
+
     conn = snowflake.connector.connect(**sf_config)
     try:
-        repo = SnowflakeRecipientRepository(conn)
+        repo = SnowflakeRecipientRepository(conn, schema=schema)
         loader = FileTemplateLoader(HTML_FILE)
         sender = EcomailSender(api_key, ECOMAIL_URL)
         notification_logger = SnowflakeNotificationLogger(conn)

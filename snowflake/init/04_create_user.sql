@@ -20,5 +20,14 @@ GRANT USAGE ON SCHEMA maisignal.l0 TO ROLE maisignal_svc_role;
 GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA maisignal.l0 TO ROLE maisignal_svc_role;
 GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA maisignal.l0 TO ROLE maisignal_svc_role;
 
+-- Grant access to per-environment schemas.
+GRANT USAGE ON SCHEMA maisignal.l0_dev TO ROLE maisignal_svc_role;
+GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA maisignal.l0_dev TO ROLE maisignal_svc_role;
+GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA maisignal.l0_dev TO ROLE maisignal_svc_role;
+
+GRANT USAGE ON SCHEMA maisignal.l0_prod TO ROLE maisignal_svc_role;
+GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA maisignal.l0_prod TO ROLE maisignal_svc_role;
+GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA maisignal.l0_prod TO ROLE maisignal_svc_role;
+
 -- Assign role to user.
 GRANT ROLE maisignal_svc_role TO USER maisignal_svc;

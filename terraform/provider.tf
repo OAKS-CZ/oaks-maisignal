@@ -3,7 +3,8 @@ provider "aws" {
 
   default_tags {
     tags = {
-      project = var.project
+      project     = var.project
+      environment = local.env
     }
   }
 }
