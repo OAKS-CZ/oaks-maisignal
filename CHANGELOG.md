@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-03-06
+
+### Changed
+- Bumped GitHub Actions: `actions/checkout` v4→v6, `actions/setup-python` v5→v6, `github/codeql-action` v3→v4, `aws-actions/configure-aws-credentials` v4→v6.
+
+## [0.6.0] - 2026-03-06
+
+### Added
+- Dependabot configuration for automated dependency updates (pip, Terraform, GitHub Actions, Docker).
+- GitHub secret scanning with push protection.
+- CodeQL code quality scanning (extended query suite).
+- All README files updated to reflect current architecture.
+
+### Removed
+- Redundant `l0.client_brands` and `l0.client_portfolio` SQL and seed files (replaced by per-environment schemas).
+
+## [0.5.0] - 2026-03-06
+
+### Added
+- Dev/prod environment separation with per-environment Snowflake schemas (`l0_dev`, `l0_prod`).
+- CI/CD deploy workflows for dev and prod environments.
+- Terraform resources: VPC, ECS Fargate, EventBridge, Lambda (Snowflake password rotation), Secrets Manager, KMS, security groups.
+- Notification logging to Snowflake `l0.notification_log` table.
+- Trivy and Checkov security scanning GitHub Actions workflows.
+- SQS dead-letter queue for Lambda rotation function.
+- X-Ray tracing and concurrency limit for Lambda.
+
+### Changed
+- Refactored backend to hexagonal architecture (ports and adapters).
+- Entry point changed from `python src/send_maisignal_alert.py` to `python -m maisignal`.
+- Scoped Lambda IAM policy: EC2 ENI actions restricted to specific subnet/SG/ENI ARNs.
+- Reduced default secret rotation interval from 90 to 30 days.
+- Removed PII (email addresses) from application log messages.
+
+### Security
+- Lambda hardened for Checkov compliance (101 passed, 0 failed).
+
 ## [0.4.0] - 2026-03-06
 
 ### Added
